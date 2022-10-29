@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+sleep 10
+
 set -eo pipefail
 
 REQUIREMENTS_LOCAL="/app/docker/requirements-local.txt"
