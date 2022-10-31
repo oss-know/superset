@@ -155,7 +155,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         )
         from superset.views.api import Api
         from superset.views.chart.views import SliceAsync, SliceModelView
-        from superset.views.core import Superset
+        from superset.views.core import Superset, JupyterView
         from superset.views.css_templates import (
             CssTemplateAsyncModelView,
             CssTemplateModelView,
@@ -371,6 +371,25 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             category_icon="fa-flask",
             category="SQL Lab",
             category_label=__("SQL"),
+        )
+        appbuilder.add_link(
+            "Query Search",
+            label=_("Query History"),
+            href="/superset/sqllab/history/",
+            icon="fa-search",
+            category_icon="fa-flask",
+            category="SQL Lab",
+            category_label=__("SQL Lab"),
+        )
+
+        appbuilder.add_view(
+            JupyterView,
+            "jupyter",
+            label=__("自助Sql生成"),
+            href="/jupyterview/jupyter",
+            icon='fa-cogs',
+            category="SQL Lab",
+            category_label=__("SQL Lab"),
         )
 
         appbuilder.add_api(LogRestApi)

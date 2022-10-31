@@ -43,6 +43,9 @@ from sqlalchemy.exc import DBAPIError, NoSuchModuleError, SQLAlchemyError
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql import functions as func
 
+
+
+
 from superset import (
     app,
     appbuilder,
@@ -97,7 +100,7 @@ from superset.explore.permalink.commands.get import GetExplorePermalinkCommand
 from superset.explore.permalink.exceptions import ExplorePermalinkGetFailedError
 from superset.extensions import async_query_manager, cache_manager
 from superset.jinja_context import get_template_processor
-from superset.models.core import Database, FavStar, Log
+from superset.models.core import Database, FavStar, Log, JupyterModel
 from superset.models.dashboard import Dashboard
 from superset.models.datasource_access_request import DatasourceAccessRequest
 from superset.models.slice import Slice
@@ -169,6 +172,7 @@ from superset.views.utils import (
     sanitize_datasource_data,
 )
 from superset.viz import BaseViz
+from .base import DeleteMixin, SupersetModelView
 
 config = app.config
 SQLLAB_QUERY_COST_ESTIMATE_TIMEOUT = config["SQLLAB_QUERY_COST_ESTIMATE_TIMEOUT"]
@@ -2869,3 +2873,13 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 "Failed to fetch schemas allowed for csv upload in this database! "
                 "Please contact your Superset Admin!"
             )
+
+class JupyterView(SupersetModelView, DeleteMixin):
+    datamodel = SQLAInterface(JupyterModel)
+    label_columns = {'name':'Name', 'info':'Info'}
+    list_columns = ['name', 'Name']
+
+    @expose('/jupyter')
+    def jupyter(self):
+        return self.render_template('jupyter.html')
+

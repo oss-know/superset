@@ -57,7 +57,7 @@ from superset import app, db_engine_specs
 from superset.constants import PASSWORD_MASK
 from superset.databases.utils import make_url_safe
 from superset.db_engine_specs.base import MetricType, TimeGrain
-from superset.extensions import cache_manager, encrypted_field_factory, security_manager
+from superset.extensions import cache_manager, encrypted_field_factory, security_manager, db
 from superset.models.helpers import AuditMixinNullable, ImportExportMixin
 from superset.result_set import SupersetResultSet
 from superset.utils import cache as cache_util, core as utils
@@ -832,3 +832,14 @@ class FavStar(Model):  # pylint: disable=too-few-public-methods
     class_name = Column(String(50))
     obj_id = Column(Integer)
     dttm = Column(DateTime, default=datetime.utcnow)
+
+
+class JupyterModel(Model):
+    __tablename__ = 'Jupyter'
+    type = "table"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(256))
+    info = Column(String(256))
+
+
+JupyterModel.__table__.create(db.engine, checkfirst=True)
