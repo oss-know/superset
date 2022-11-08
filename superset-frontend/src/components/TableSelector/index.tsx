@@ -32,6 +32,9 @@ import Icons from 'src/components/Icons';
 import DatabaseSelector, {
   DatabaseObject,
 } from 'src/components/DatabaseSelector';
+import TemplateSelector, {
+  DatabaseObject,
+} from 'src/components/TemplateSelector';
 import RefreshLabel from 'src/components/RefreshLabel';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
@@ -284,51 +287,16 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
     [],
   );
 
-  function renderTableSelect() {
-    const disabled = (currentSchema && !formMode && readOnly) || !currentSchema;
-
-    const header = sqlLabMode ? (
-      <FormLabel>{t('See table schema')}</FormLabel>
-    ) : (
-      <FormLabel>{t('Table')}</FormLabel>
+  function renderTempaletSelect() {
+    return (
+      <TemplateSelector/>
     );
-
-    const select = (
-      <Select
-        ariaLabel={t('Select table or type table name')}
-        disabled={disabled}
-        filterOption={handleFilterOption}
-        header={header}
-        labelInValue
-        loading={loadingTables}
-        name="select-table"
-        onChange={(options: TableOption | TableOption[]) =>
-          internalTableChange(options)
-        }
-        options={tableOptions}
-        placeholder={t('Select table or type table name')}
-        showSearch
-        mode={tableSelectMode}
-        value={tableSelectValue}
-        allowClear={tableSelectMode === 'multiple'}
-      />
-    );
-
-    const refreshLabel = !formMode && !readOnly && (
-      <RefreshLabel
-        onClick={() => refetch()}
-        tooltipContent={t('Force refresh table list')}
-      />
-    );
-
-    return renderSelectRow(select, refreshLabel);
   }
-
   return (
     <TableSelectorWrapper>
       {renderDatabaseSelector()}
       {sqlLabMode && !formMode && <div className="divider" />}
-      {renderTableSelect()}
+      {renderTempaletSelect()}
     </TableSelectorWrapper>
   );
 };
