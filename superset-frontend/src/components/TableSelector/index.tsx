@@ -286,22 +286,60 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
     },
     [],
   );
+  function renderTableSelect() {
+    const disabled = (currentSchema && !formMode && readOnly) || !currentSchema;
 
-  function renderTempaletSelect() {
-    return (
-      <TemplateSelector/>
+    const header = sqlLabMode ? (
+      <FormLabel>{t('See table schema')}</FormLabel>
+    ) : (
+      <FormLabel>{t('Table')}</FormLabel>
     );
+
+    const select = (
+      <Select
+        ariaLabel={t('Select table or type table name')}
+        disabled={disabled}
+        filterOption={handleFilterOption}
+        header={header}
+        labelInValue
+        loading={loadingTables}
+        name="select-table"
+        onChange={(options: TableOption | TableOption[]) =>
+          internalTableChange(options)
+        }
+        options={tableOptions}
+        placeholder={t('Select table or type table name')}
+        showSearch
+        mode={tableSelectMode}
+        value={tableSelectValue}
+        allowClear={tableSelectMode === 'multiple'}
+      />
+    );
+
+    const refreshLabel = !formMode && !readOnly && (
+      <RefreshLabel
+        onClick={() => refetch()}
+        tooltipContent={t('Force refresh table list')}
+      />
+    );
+
+    return renderSelectRow(select, refreshLabel);
+  }
+  function renderTemplateSelect() {
+    return <TemplateSelector />;
   }
   return (
     <TableSelectorWrapper>
       {renderDatabaseSelector()}
       {sqlLabMode && !formMode && <div className="divider" />}
-      {renderTempaletSelect()}
+      {renderTableSelect()}
+      <div className="divider" />
+      {renderTemplateSelect()}
     </TableSelectorWrapper>
   );
 };
 
-export const TableSelectorMultiple: FunctionComponent<TableSelectorProps> =
+export const TableSelectorMultiple: FunctionComponent<TableSelectorProps>=
   props => <TableSelector tableSelectMode="multiple" {...props} />;
 
 export default TableSelector;

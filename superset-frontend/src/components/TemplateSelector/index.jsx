@@ -19,22 +19,17 @@
 import React, { useState, useEffect } from 'react';
 import { styled, t } from '@superset-ui/core';
 import { Select } from 'src/components';
-// import { Select } from 'antd';
 import { Input } from 'src/components/Input';
-
-import Label from 'src/components/Label';
 import { FormLabel } from 'src/components/Form';
 
 const TemplateSelectorWrapper = styled.div`
-  ${({ theme }) => `
-    .refresh {
+  ${({ theme }) => `    .refresh {
       display: flex;
       align-items: center;
       width: 30px;
       margin-left: ${theme.gridUnit}px;
       margin-top: ${theme.gridUnit * 5}px;
     }
-
     .section {
       display: flex;
       flex-direction: row;
@@ -45,6 +40,10 @@ const TemplateSelectorWrapper = styled.div`
       width: calc(100% - 30px - ${theme.gridUnit}px);
       flex: 1;
     }
+    .params-section {
+      color: 'red';
+    } 
+    
     .input {
       width: calc(100% - 30px - ${theme.gridUnit}px);
       flex: 1;
@@ -56,61 +55,70 @@ const TemplateSelectorWrapper = styled.div`
   `}
 `;
 
-const LabelStyle = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-left: ${({ theme }) => theme.gridUnit - 2}px;
-
-  .backend {
-    overflow: visible;
-  }
-
-  .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-
-// const SelectLabel = ({ backend, templateName}) => (
-//   <LabelStyle>
-//     <Label className="backend">{backend}</Label>
-//     <span className="name" title={templateName}>
-//       {templateName}
-//     </span>
-//   </LabelStyle>
-// );
-
 export default function TemplateSelector() {
+  const [templatesInfo, setTemplatesInfo] = useState([]);
   const [templateOptions, setTemplateOptions] = useState([]);
   const [paramsList, setParamsList] = useState([]);
   const [currentTemplate, setCurrentTemplate] = useState(null);
 
   //  mounted
   useEffect(() => {
-    // 获取templates
-    const templateOptions = [
+    const templatesInfo = [
       {
-        // id: 1,
+        id: 0,
         label: '项目各公司占比',
-        value: 'company_ratio',
+        name: 'company_ratio',
+        paramsList: [
+          {
+            name: 'org',
+            description: '',
+          },
+          {
+            name: 'email',
+            description: 'a',
+          },
+        ],
+      },
+      {
+        id: 1,
+        label: '项目时区占比',
+        name: 'timezone_ratio',
+        paramsList: [
+          {
+            name: 'org',
+            description: '',
+          },
+          {
+            name: 'email',
+            description: 'aa',
+          },
+        ],
       },
     ];
+    setTemplatesInfo(templatesInfo);
+    // 获取templates
     // 赋值
+    const templateOptions = templatesInfo.map(item => {
+      return {
+        label: item.label,
+        value: item.id,
+      };
+    });
     setTemplateOptions(templateOptions);
   }, []);
+
   // 监听currentTemplate
   useEffect(() => {
     if (currentTemplate) {
-      setParamsList(currentTemplate.paramsList);
+      setParamsList(templatesInfo[currentTemplate.value].paramsList);
     }
   }, [currentTemplate]);
 
-  // 触发template切换事件，然后这里要替换currenttemplate
+  // 触发template切换事件，然后这里要替换currentTemplate
   function changeTemplate(value) {
-    console.log('onChange', value);
-    // 切换currenttemplate
-    setCurrentTemplate(value);
+    if (value) {
+      setCurrentTemplate(value);
+    }
   }
 
   function renderSelectRow(select) {
@@ -123,26 +131,17 @@ export default function TemplateSelector() {
 
   function renderInputRow(input, label) {
     return (
-      <div className="section">
-        <span>{label}</span>
-        <span className="input">{input}</span>
-      </div>
+      <>
+        <FormLabel>{label}</FormLabel>
+        <div className="section params-section">
+          <span className="input">{input}</span>
+          <span className="refresh"> </span>
+        </div>
+      </>
     );
   }
 
   function renderTemplateSelect() {
-    console.log('debugging', templateOptions, currentTemplate);
-    const tempOptions = [
-      {
-        label: 'foo',
-        value: 'bar',
-      },
-      {
-        label: 'hello',
-        value: 'world',
-      },
-    ];
-
     return renderSelectRow(
       <Select
         ariaLabel={t('Select template')}
@@ -153,19 +152,21 @@ export default function TemplateSelector() {
         onChange={changeTemplate}
         options={templateOptions}
         showSearch
-        // value={currentTemplate}
       />,
     );
   }
 
   function renderParamsInput(templateParams) {
-    return renderInputRow(<Input />, templateParams.name);
+    return renderInputRow(
+      <Input placeholder={templateParams.description} />,
+      templateParams.name,
+    );
   }
 
   return (
     <TemplateSelectorWrapper data-test="DatabaseSelector">
       {renderTemplateSelect()}
-      {/*{currentTemplate && paramsList.map(item => (renderParamsInput(item)))}*/}
+      {currentTemplate && paramsList.map(item => renderParamsInput(item))}
     </TemplateSelectorWrapper>
   );
 }

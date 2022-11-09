@@ -269,6 +269,7 @@ export default function SqlEditorLeftBar({
         tableValue={selectedTableNames}
         sqlLabMode
       />
+      <Button>RUN</Button>
       <div className="divider" />
       <StyledScrollbarContainer>
         <div
