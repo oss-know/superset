@@ -23,7 +23,8 @@ import { Input } from 'src/components/Input';
 import { FormLabel } from 'src/components/Form';
 
 const TemplateSelectorWrapper = styled.div`
-  ${({ theme }) => `    .refresh {
+  ${({ theme }) => `    
+    .refresh {
       display: flex;
       align-items: center;
       width: 30px;
@@ -40,10 +41,7 @@ const TemplateSelectorWrapper = styled.div`
       width: calc(100% - 30px - ${theme.gridUnit}px);
       flex: 1;
     }
-    .params-section {
-      color: 'red';
-    } 
-    
+
     .input {
       width: calc(100% - 30px - ${theme.gridUnit}px);
       flex: 1;
@@ -61,7 +59,6 @@ export default function TemplateSelector() {
   const [paramsList, setParamsList] = useState([]);
   const [currentTemplate, setCurrentTemplate] = useState(null);
 
-  //  mounted
   useEffect(() => {
     const templatesInfo = [
       {
@@ -96,28 +93,23 @@ export default function TemplateSelector() {
       },
     ];
     setTemplatesInfo(templatesInfo);
-    // 获取templates
-    // 赋值
-    const templateOptions = templatesInfo.map(item => {
-      return {
-        label: item.label,
-        value: item.id,
-      };
-    });
+
+    const templateOptions = templatesInfo.map(item => ({
+      label: item.label,
+      value: item.id,
+    }));
     setTemplateOptions(templateOptions);
   }, []);
 
-  // 监听currentTemplate
   useEffect(() => {
     if (currentTemplate) {
       setParamsList(templatesInfo[currentTemplate.value].paramsList);
     }
-  }, [currentTemplate]);
+  }, [currentTemplate, templatesInfo]);
 
-  // 触发template切换事件，然后这里要替换currentTemplate
-  function changeTemplate(value) {
-    if (value) {
-      setCurrentTemplate(value);
+  function changeTemplate(template) {
+    if (template) {
+      setCurrentTemplate(template);
     }
   }
 
@@ -133,7 +125,7 @@ export default function TemplateSelector() {
     return (
       <>
         <FormLabel>{label}</FormLabel>
-        <div className="section params-section">
+        <div className="section">
           <span className="input">{input}</span>
           <span className="refresh"> </span>
         </div>
@@ -156,10 +148,10 @@ export default function TemplateSelector() {
     );
   }
 
-  function renderParamsInput(templateParams) {
+  function renderParamsInput(templateParam) {
     return renderInputRow(
-      <Input placeholder={templateParams.description} />,
-      templateParams.name,
+      <Input placeholder={templateParam.description} />,
+      templateParam.name,
     );
   }
 

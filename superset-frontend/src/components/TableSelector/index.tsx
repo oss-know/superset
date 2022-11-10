@@ -32,9 +32,7 @@ import Icons from 'src/components/Icons';
 import DatabaseSelector, {
   DatabaseObject,
 } from 'src/components/DatabaseSelector';
-import TemplateSelector, {
-  DatabaseObject,
-} from 'src/components/TemplateSelector';
+import TemplateSelector from 'src/components/TemplateSelector';
 import RefreshLabel from 'src/components/RefreshLabel';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
@@ -339,7 +337,8 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   );
 };
 
-export const TableSelectorMultiple: FunctionComponent<TableSelectorProps>=
-  props => <TableSelector tableSelectMode="multiple" {...props} />;
+export const TableSelectorMultiple: FunctionComponent<
+  TableSelectorProps
+> = props => <TableSelector tableSelectMode="multiple" {...props} />;
 
 export default TableSelector;
