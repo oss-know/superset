@@ -17,9 +17,10 @@
  * under the License.
  */
 import React, { useState, useEffect } from 'react';
-import { styled, t } from '@superset-ui/core';
+import { styled, t, SupersetClient } from '@superset-ui/core';
 import { Select } from 'src/components';
 import { Input } from 'src/components/Input';
+import Button from 'src/components/Button';
 import { FormLabel } from 'src/components/Form';
 
 const TemplateSelectorWrapper = styled.div`
@@ -58,8 +59,11 @@ export default function TemplateSelector() {
   const [templateOptions, setTemplateOptions] = useState([]);
   const [paramsList, setParamsList] = useState([]);
   const [currentTemplate, setCurrentTemplate] = useState(null);
+  const [payload, setPayload] = useState(null);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   useEffect(() => {
+    // 这里向后台发送请求,获取模板列表
     const templatesInfo = [
       {
         id: 0,
@@ -93,6 +97,7 @@ export default function TemplateSelector() {
       },
     ];
     setTemplatesInfo(templatesInfo);
+    // 将模板转成selector需要的格式
 
     const templateOptions = templatesInfo.map(item => ({
       label: item.label,
@@ -104,8 +109,15 @@ export default function TemplateSelector() {
   useEffect(() => {
     if (currentTemplate) {
       setParamsList(templatesInfo[currentTemplate.value].paramsList);
+      const payload = {};
+      paramsList.forEach(item => {
+        payload[item.name] = null;
+      });
+      setPayload(payload);
+    } else {
+      setPayload({});
     }
-  }, [currentTemplate, templatesInfo]);
+  }, [currentTemplate, templatesInfo, paramsList]);
 
   function changeTemplate(template) {
     if (template) {
@@ -147,18 +159,63 @@ export default function TemplateSelector() {
       />,
     );
   }
-
+  function changeParam(e) {
+    if (e.target && e.target.id) {
+      const currentPayload = payload;
+      currentPayload[e.target.id] = e.target.value;
+      setPayload(currentPayload);
+    }
+  }
   function renderParamsInput(templateParam) {
     return renderInputRow(
-      <Input placeholder={templateParam.description} />,
+      <Input
+        placeholder={templateParam.description}
+        key={templateParam.name}
+        onChange={changeParam}
+        id={templateParam.name}
+      />,
       templateParam.name,
     );
   }
 
+  function postTemplateParamsData(payload) {
+    return SupersetClient.post({
+      endpoint: encodeURI('/api/create_dataset'),
+      postPayload: payload,
+    })
+      .then(({ json }) => {
+        setButtonLoading(false);
+        const { dataset_id: datasetId } = json;
+        window.open(
+          `/explore/?datasource_id=${datasetId}&datasource_type=query`,
+          '_blank',
+          'noreferrer',
+        );
+      })
+      .catch(err => {
+        // 这里应该改成错误提示信息,
+        console.log(err);
+      });
+  }
+
+  function onClick() {
+    setButtonLoading(true);
+    postTemplateParamsData(payload);
+  }
   return (
-    <TemplateSelectorWrapper data-test="DatabaseSelector">
-      {renderTemplateSelect()}
-      {currentTemplate && paramsList.map(item => renderParamsInput(item))}
-    </TemplateSelectorWrapper>
+    <>
+      <TemplateSelectorWrapper>
+        {renderTemplateSelect()}
+        {currentTemplate && paramsList.map(item => renderParamsInput(item))}
+      </TemplateSelectorWrapper>
+      <Button
+        buttonSize="large"
+        disabled={buttonLoading}
+        loading={buttonLoading}
+        onClick={onClick}
+      >
+        RUN
+      </Button>
+    </>
   );
 }
