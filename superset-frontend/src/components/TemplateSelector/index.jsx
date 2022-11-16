@@ -62,8 +62,24 @@ export default function TemplateSelector() {
   const [payload, setPayload] = useState(null);
   const [buttonLoading, setButtonLoading] = useState(false);
 
+  // function getTemplate() {
+  //   SupersetClient.get({ endpoint: `/api/v1/database/getTemplateList` })
+  //     .then(({ json }) => {
+  //       const templatesInfo = json.template_list
+  //       setTemplatesInfo(templatesInfo);
+  //       // 将模板转成selector需要的格式
+  //       const templateOptions = templatesInfo.map(item => ({
+  //         label: item.label,
+  //         value: item.id,
+  //       }));
+  //       setTemplateOptions(templateOptions);
+  //     })
+  //     .catch(() => {});
+  // }
+
   useEffect(() => {
     // 这里向后台发送请求,获取模板列表
+    // getTemplate();
     const templatesInfo = [
       {
         id: 0,
@@ -73,10 +89,6 @@ export default function TemplateSelector() {
           {
             name: 'org',
             description: '',
-          },
-          {
-            name: 'email',
-            description: 'a',
           },
         ],
       },
@@ -139,7 +151,6 @@ export default function TemplateSelector() {
         <FormLabel>{label}</FormLabel>
         <div className="section">
           <span className="input">{input}</span>
-          <span className="refresh"> </span>
         </div>
       </>
     );
@@ -170,7 +181,7 @@ export default function TemplateSelector() {
     return renderInputRow(
       <Input
         placeholder={templateParam.description}
-        key={templateParam.name}
+        key={`${currentTemplate.value}_${templateParam.name}`}
         onChange={changeParam}
         id={templateParam.name}
       />,
@@ -209,6 +220,7 @@ export default function TemplateSelector() {
         {currentTemplate && paramsList.map(item => renderParamsInput(item))}
       </TemplateSelectorWrapper>
       <Button
+        block
         buttonSize="large"
         disabled={buttonLoading}
         loading={buttonLoading}

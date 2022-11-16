@@ -75,13 +75,13 @@ import {
 import { FeatureFlag, isFeatureEnabled } from 'src/featureFlags';
 import { EmptyStateBig } from 'src/components/EmptyState';
 import { isEmpty } from 'lodash';
+import TemplateSelector from 'src/components/TemplateSelector';
 import TemplateParamsEditor from '../TemplateParamsEditor';
 import ConnectedSouthPane from '../SouthPane/state';
 import SaveQuery from '../SaveQuery';
 import ScheduleQueryButton from '../ScheduleQueryButton';
 import EstimateQueryCostButton from '../EstimateQueryCostButton';
 import ShareSqlLabQuery from '../ShareSqlLabQuery';
-import SqlEditorLeftBar from '../SqlEditorLeftBar';
 import AceEditorWrapper from '../AceEditorWrapper';
 import RunQueryActionButton from '../RunQueryActionButton';
 import QueryLimitSelect from '../QueryLimitSelect';
@@ -655,13 +655,7 @@ const SqlEditor = ({
               width={adjustedWidth}
               hide={hideLeftBar}
             >
-              <SqlEditorLeftBar
-                database={database}
-                queryEditor={queryEditor}
-                tables={tables}
-                actions={actions}
-                setEmptyState={bool => setShowEmptyState(bool)}
-              />
+              <TemplateSelector />
             </StyledSidebar>
           )}
         </ResizableSidebar>

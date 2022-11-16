@@ -32,7 +32,6 @@ import Icons from 'src/components/Icons';
 import DatabaseSelector, {
   DatabaseObject,
 } from 'src/components/DatabaseSelector';
-import TemplateSelector from 'src/components/TemplateSelector';
 import RefreshLabel from 'src/components/RefreshLabel';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
@@ -323,16 +322,12 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
 
     return renderSelectRow(select, refreshLabel);
   }
-  function renderTemplateSelect() {
-    return <TemplateSelector />;
-  }
   return (
     <TableSelectorWrapper>
+      {/* 这里是要隐藏掉的selector */}
       {renderDatabaseSelector()}
       {sqlLabMode && !formMode && <div className="divider" />}
       {renderTableSelect()}
-      <div className="divider" />
-      {renderTemplateSelect()}
     </TableSelectorWrapper>
   );
 };
