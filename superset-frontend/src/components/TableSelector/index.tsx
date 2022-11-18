@@ -25,19 +25,24 @@ import React, {
 } from 'react';
 import { SelectValue } from 'antd/lib/select';
 
-import { styled, t } from '@superset-ui/core';
+import { styled, t, SupersetClient } from '@superset-ui/core';
 import { Select } from 'src/components';
 import { FormLabel } from 'src/components/Form';
 import Icons from 'src/components/Icons';
 import DatabaseSelector, {
   DatabaseObject,
 } from 'src/components/DatabaseSelector';
+import TemplateSelector from 'src/components/TemplateSelector';
+import Button from 'src/components/Button';
+import { Input } from 'src/components/Input';
+
 import RefreshLabel from 'src/components/RefreshLabel';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { SchemaOption } from 'src/SqlLab/types';
 import { useTables, Table } from 'src/hooks/apiResources';
+import { queryEditorSetTemplateParams } from 'src/SqlLab/actions/sqlLab';
 
 const REFRESH_WIDTH = 30;
 
@@ -57,18 +62,23 @@ const TableSelectorWrapper = styled.div`
       align-items: center;
     }
 
+    .input {
+      width: calc(100% - 30px - ${theme.gridUnit}px);
+      flex: 1;
+    }
     .divider {
       border-bottom: 1px solid ${theme.colors.secondary.light5};
       margin: 15px 0;
     }
-
     .table-length {
       color: ${theme.colors.grayscale.light1};
     }
-
     .select {
       flex: 1;
       max-width: calc(100% - ${theme.gridUnit + REFRESH_WIDTH}px)
+    }
+    & > div {
+      margin-bottom: ${theme.gridUnit * 4}px;
     }
   `}
 `;
@@ -322,12 +332,94 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
 
     return renderSelectRow(select, refreshLabel);
   }
+
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const [params, setParams] = useState({});
+  const [template_id, setTemplateId] = useState('');
+  const [dataset_name, setDatasetName] = useState('');
+  function postTemplateParamsData(payload: object) {
+    console.log(payload);
+
+    return SupersetClient.post({
+      endpoint: encodeURI('/api/dataset'),
+      postPayload: payload,
+    })
+      .then(({ json }) => {
+        setButtonLoading(false);
+        const { dataset_id: datasetId } = json;
+        window.open(
+          `/explore/?datasource_id=${datasetId}&datasource_type=query`,
+          '_blank',
+          'noreferrer',
+        );
+      })
+      .catch(err => {
+        setButtonLoading(false);
+        // 这里应该改成错误提示信息弹出框
+        console.log(err);
+      });
+  }
+
+  function createDataset() {
+    setButtonLoading(true);
+    // 传递之前应当还有一个校验，检验参数值是否为空的过程
+    postTemplateParamsData({
+      database: database?.id,
+      schema: currentSchema,
+      params,
+      template_id,
+      dataset_name,
+    });
+  }
+  function onParamsChange(params: Object) {
+    setParams(params);
+  }
+  function onTemplateChange(id: string) {
+    setTemplateId(id);
+  }
+
+  function renderInputRow(input: ReactNode, label: string) {
+    return (
+      <>
+        <FormLabel>{label}</FormLabel>
+        <div className="section">
+          <span className="input">{input}</span>
+          <span className="refresh" />
+        </div>
+      </>
+    );
+  }
+  function DatasetNameChange(value: string) {
+    if (value) {
+      setDatasetName(value);
+    }
+  }
+
   return (
     <TableSelectorWrapper>
-      {/* 这里是要隐藏掉的selector */}
       {renderDatabaseSelector()}
       {sqlLabMode && !formMode && <div className="divider" />}
-      {renderTableSelect()}
+      <TemplateSelector
+        onParamsChange={onParamsChange}
+        onTemplateChange={onTemplateChange}
+      />
+      {renderInputRow(
+        <Input
+          placeholder={t('Dataset name')}
+          onChange={e => {
+            DatasetNameChange(e.target.value);
+          }}
+        />,
+        'dataset name',
+      )}
+      <Button
+        block
+        disabled={buttonLoading}
+        loading={buttonLoading}
+        onClick={createDataset}
+      >
+        RUN
+      </Button>
     </TableSelectorWrapper>
   );
 };

@@ -75,13 +75,13 @@ import {
 import { FeatureFlag, isFeatureEnabled } from 'src/featureFlags';
 import { EmptyStateBig } from 'src/components/EmptyState';
 import { isEmpty } from 'lodash';
-import TemplateSelector from 'src/components/TemplateSelector';
 import TemplateParamsEditor from '../TemplateParamsEditor';
 import ConnectedSouthPane from '../SouthPane/state';
 import SaveQuery from '../SaveQuery';
 import ScheduleQueryButton from '../ScheduleQueryButton';
 import EstimateQueryCostButton from '../EstimateQueryCostButton';
 import ShareSqlLabQuery from '../ShareSqlLabQuery';
+import SqlEditorLeftBar from '../SqlEditorLeftBar';
 import AceEditorWrapper from '../AceEditorWrapper';
 import RunQueryActionButton from '../RunQueryActionButton';
 import QueryLimitSelect from '../QueryLimitSelect';
@@ -101,11 +101,9 @@ const StyledToolbar = styled.div`
   justify-content: space-between;
   border: 1px solid ${({ theme }) => theme.colors.grayscale.light2};
   border-top: 0;
-
   form {
     margin-block-end: 0;
   }
-
   .leftItems,
   .rightItems {
     display: flex;
@@ -113,13 +111,11 @@ const StyledToolbar = styled.div`
     & > span {
       margin-right: ${({ theme }) => theme.gridUnit * 2}px;
       display: inline-block;
-
       &:last-child {
         margin-right: 0;
       }
     }
   }
-
   .limitDropdown {
     white-space: nowrap;
   }
@@ -655,7 +651,13 @@ const SqlEditor = ({
               width={adjustedWidth}
               hide={hideLeftBar}
             >
-              <TemplateSelector />
+              <SqlEditorLeftBar
+                database={database}
+                queryEditor={queryEditor}
+                tables={tables}
+                actions={actions}
+                setEmptyState={bool => setShowEmptyState(bool)}
+              />
             </StyledSidebar>
           )}
         </ResizableSidebar>

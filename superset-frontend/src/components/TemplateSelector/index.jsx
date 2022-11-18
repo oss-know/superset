@@ -19,18 +19,22 @@
 import React, { useState, useEffect } from 'react';
 import { styled, t, SupersetClient } from '@superset-ui/core';
 import { Select } from 'src/components';
+import RefreshLabel from 'src/components/RefreshLabel';
+import MultipleInput from 'src/components/MultipleInput';
 import { Input } from 'src/components/Input';
-import Button from 'src/components/Button';
 import { FormLabel } from 'src/components/Form';
 
 const TemplateSelectorWrapper = styled.div`
   ${({ theme }) => `    
-    .refresh {
+    .add-label, .refresh {
       display: flex;
       align-items: center;
       width: 30px;
       margin-left: ${theme.gridUnit}px;
       margin-top: ${theme.gridUnit * 5}px;
+    }
+    .add-label{
+      transform: translateY(${theme.gridUnit * 5}px);
     }
     .section {
       display: flex;
@@ -54,82 +58,45 @@ const TemplateSelectorWrapper = styled.div`
   `}
 `;
 
-export default function TemplateSelector() {
+export default function TemplateSelector(props) {
   const [templatesInfo, setTemplatesInfo] = useState([]);
   const [templateOptions, setTemplateOptions] = useState([]);
-  const [paramsList, setParamsList] = useState([]);
   const [currentTemplate, setCurrentTemplate] = useState(null);
-  const [payload, setPayload] = useState(null);
-  const [buttonLoading, setButtonLoading] = useState(false);
+  const [params, setParams] = useState(null);
 
-  // function getTemplate() {
-  //   SupersetClient.get({ endpoint: `/api/v1/database/getTemplateList` })
-  //     .then(({ json }) => {
-  //       const templatesInfo = json.template_list
-  //       setTemplatesInfo(templatesInfo);
-  //       // 将模板转成selector需要的格式
-  //       const templateOptions = templatesInfo.map(item => ({
-  //         label: item.label,
-  //         value: item.id,
-  //       }));
-  //       setTemplateOptions(templateOptions);
-  //     })
-  //     .catch(() => {});
-  // }
+  function getTemplates() {
+    SupersetClient.get({ endpoint: `/api/templates` })
+      .then(({ json }) => {
+        // 判断是否合法
+        const templatesInfo = json;
+        setTemplatesInfo(templatesInfo);
+        const templateOptions = templatesInfo.map((item, index) => ({
+          label: item.label,
+          value: index,
+        }));
+        setTemplateOptions(templateOptions);
+      })
+      .catch(err => {
+        console.log(err);
+        // 这里要改成错误提示信息
+      });
+  }
 
   useEffect(() => {
-    // 这里向后台发送请求,获取模板列表
-    // getTemplate();
-    const templatesInfo = [
-      {
-        id: 0,
-        label: '项目各公司占比',
-        name: 'company_ratio',
-        paramsList: [
-          {
-            name: 'org',
-            description: '',
-          },
-        ],
-      },
-      {
-        id: 1,
-        label: '项目时区占比',
-        name: 'timezone_ratio',
-        paramsList: [
-          {
-            name: 'org',
-            description: '',
-          },
-          {
-            name: 'email',
-            description: 'aa',
-          },
-        ],
-      },
-    ];
-    setTemplatesInfo(templatesInfo);
-    // 将模板转成selector需要的格式
-
-    const templateOptions = templatesInfo.map(item => ({
-      label: item.label,
-      value: item.id,
-    }));
-    setTemplateOptions(templateOptions);
+    getTemplates();
   }, []);
 
   useEffect(() => {
     if (currentTemplate) {
-      setParamsList(templatesInfo[currentTemplate.value].paramsList);
-      const payload = {};
-      paramsList.forEach(item => {
-        payload[item.name] = null;
+      const par = {};
+      templatesInfo[currentTemplate.value].params.forEach(item => {
+        par[item.name] = null;
       });
-      setPayload(payload);
-    } else {
-      setPayload({});
+      setParams(par);
+      props.onTemplateChange(templatesInfo[currentTemplate.value].template_id);
     }
-  }, [currentTemplate, templatesInfo, paramsList]);
+    setParams({});
+  }, [currentTemplate]);
 
   function changeTemplate(template) {
     if (template) {
@@ -141,6 +108,12 @@ export default function TemplateSelector() {
     return (
       <div className="section">
         <span className="select">{select}</span>
+        <span className="refresh">
+          <RefreshLabel
+            onClick={() => getTemplates()}
+            tooltipContent={t('Force refresh table list')}
+          />
+        </span>
       </div>
     );
   }
@@ -148,12 +121,16 @@ export default function TemplateSelector() {
   function renderInputRow(input, label) {
     return (
       <>
-        <FormLabel>{label}</FormLabel>
-        <div className="section">
+        <FormLabel key={`form_${label}`}>{label}</FormLabel>
+        <div className="section" key={`input_${label}`}>
           <span className="input">{input}</span>
+          <span className="refresh" />
         </div>
       </>
     );
+  }
+  function renderMultipleInputRow(template, func) {
+    return <MultipleInput template={template} onChange={func} />;
   }
 
   function renderTemplateSelect() {
@@ -170,64 +147,36 @@ export default function TemplateSelector() {
       />,
     );
   }
-  function changeParam(e) {
-    if (e.target && e.target.id) {
-      const currentPayload = payload;
-      currentPayload[e.target.id] = e.target.value;
-      setPayload(currentPayload);
-    }
+  function changeParam(id, value) {
+    const currentPayload = params;
+    currentPayload[id] = value;
+    setParams(currentPayload);
+    props.onParamsChange(params);
   }
+
   function renderParamsInput(templateParam) {
-    return renderInputRow(
-      <Input
-        placeholder={templateParam.description}
-        key={`${currentTemplate.value}_${templateParam.name}`}
-        onChange={changeParam}
-        id={templateParam.name}
-      />,
-      templateParam.name,
-    );
+    return templateParam.description.indexOf('json数组') === -1
+      ? renderInputRow(
+          <Input
+            placeholder={templateParam.description}
+            key={templateParam.toString()}
+            onChange={e => changeParam(e.target.id, e.target.value)}
+            id={templateParam.name}
+          />,
+          templateParam.name,
+        )
+      : renderMultipleInputRow(templateParam, changeParam);
   }
 
-  function postTemplateParamsData(payload) {
-    return SupersetClient.post({
-      endpoint: encodeURI('/api/create_dataset'),
-      postPayload: payload,
-    })
-      .then(({ json }) => {
-        setButtonLoading(false);
-        const { dataset_id: datasetId } = json;
-        window.open(
-          `/explore/?datasource_id=${datasetId}&datasource_type=query`,
-          '_blank',
-          'noreferrer',
-        );
-      })
-      .catch(err => {
-        // 这里应该改成错误提示信息,
-        console.log(err);
-      });
-  }
-
-  function onClick() {
-    setButtonLoading(true);
-    postTemplateParamsData(payload);
-  }
   return (
     <>
       <TemplateSelectorWrapper>
         {renderTemplateSelect()}
-        {currentTemplate && paramsList.map(item => renderParamsInput(item))}
+        {currentTemplate &&
+          templatesInfo[currentTemplate.value].params.map(item =>
+            renderParamsInput(item),
+          )}
       </TemplateSelectorWrapper>
-      <Button
-        block
-        buttonSize="large"
-        disabled={buttonLoading}
-        loading={buttonLoading}
-        onClick={onClick}
-      >
-        RUN
-      </Button>
     </>
   );
 }
