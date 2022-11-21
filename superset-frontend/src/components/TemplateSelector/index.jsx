@@ -135,8 +135,8 @@ export default function TemplateSelector(props) {
       </>
     );
   }
-  function renderMultipleInputRow(template, func) {
-    return <MultipleInput template={template} onChange={func} />;
+  function renderMultipleInputRow(template, func, key) {
+    return <MultipleInput template={template} onChange={func} key={key} />;
   }
 
   function renderTemplateSelect() {
@@ -166,13 +166,17 @@ export default function TemplateSelector(props) {
       ? renderInputRow(
           <Input
             placeholder={templateParam.description}
-            key={templateParam.toString()}
+            key={currentTemplate.label + templateParam.name}
             onChange={e => changeParam(e.target.id, e.target.value)}
             id={templateParam.name}
           />,
           templateParam.name,
         )
-      : renderMultipleInputRow(templateParam, changeParam);
+      : renderMultipleInputRow(
+          templateParam,
+          changeParam,
+          currentTemplate.label + templateParam.name,
+        );
   }
 
   return (
