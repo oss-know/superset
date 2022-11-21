@@ -42,7 +42,6 @@ import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { SchemaOption } from 'src/SqlLab/types';
 import { useTables, Table } from 'src/hooks/apiResources';
-import { queryEditorSetTemplateParams } from 'src/SqlLab/actions/sqlLab';
 
 const REFRESH_WIDTH = 30;
 
@@ -337,26 +336,27 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   const [params, setParams] = useState({});
   const [template_id, setTemplateId] = useState('');
   const [dataset_name, setDatasetName] = useState('');
-  function postTemplateParamsData(payload: object) {
-    console.log(payload);
 
+  function postTemplateParamsData(payload: object) {
     return SupersetClient.post({
-      endpoint: encodeURI('/api/dataset'),
-      postPayload: payload,
+      url: 'http://192.168.8.60:5000/api/dataset',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      parseMethod: 'json-bigint',
     })
       .then(({ json }) => {
         setButtonLoading(false);
         const { dataset_id: datasetId } = json;
         window.open(
-          `/explore/?datasource_id=${datasetId}&datasource_type=query`,
+          `/explore/?datasource_id=${datasetId}&dataset_type=table&dataset_id=${datasetId}&datasource_type=table`,
           '_blank',
           'noreferrer',
         );
       })
-      .catch(err => {
+      .catch(e => {
         setButtonLoading(false);
+        console.log('error', e);
         // 这里应该改成错误提示信息弹出框
-        console.log(err);
       });
   }
 

@@ -63,11 +63,15 @@ export default function TemplateSelector(props) {
   const [templateOptions, setTemplateOptions] = useState([]);
   const [currentTemplate, setCurrentTemplate] = useState(null);
   const [params, setParams] = useState(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
 
   function getTemplates() {
-    SupersetClient.get({ endpoint: `/api/templates` })
+    SupersetClient.get({
+      url: 'http://192.168.8.60:5000/api/templates',
+    })
       .then(({ json }) => {
-        // 判断是否合法
+        setLoadingTemplates(false);
+        // 这里缺少判断是否合法
         const templatesInfo = json;
         setTemplatesInfo(templatesInfo);
         const templateOptions = templatesInfo.map((item, index) => ({
@@ -76,9 +80,10 @@ export default function TemplateSelector(props) {
         }));
         setTemplateOptions(templateOptions);
       })
-      .catch(err => {
-        console.log(err);
-        // 这里要改成错误提示信息
+      .catch(e => {
+        setLoadingTemplates(false);
+        console.log('error', e);
+        // 这里缺少错误提示信息
       });
   }
 
@@ -96,6 +101,7 @@ export default function TemplateSelector(props) {
       props.onTemplateChange(templatesInfo[currentTemplate.value].template_id);
     }
     setParams({});
+    props.onParamsChange({});
   }, [currentTemplate]);
 
   function changeTemplate(template) {
@@ -142,6 +148,7 @@ export default function TemplateSelector(props) {
         name="select-template"
         placeholder={t('Select template')}
         onChange={changeTemplate}
+        loading={loadingTemplates}
         options={templateOptions}
         showSearch
       />,
