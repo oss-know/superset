@@ -214,7 +214,7 @@ class TabbedSqlEditors extends React.PureComponent {
           : this.props.defaultDbId || firstDbId,
       schema: activeQueryEditor ? activeQueryEditor.schema : null,
       autorun: false,
-      sql: `${warning}SELECT ...。。。。。ss`,
+      sql: `${warning}SELECT ...`,
       queryLimit: this.props.defaultQueryLimit,
     };
     this.props.actions.addNewQueryEditor(qe);

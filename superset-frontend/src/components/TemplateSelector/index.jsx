@@ -64,14 +64,12 @@ export default function TemplateSelector(props) {
   const [currentTemplate, setCurrentTemplate] = useState(null);
   const [params, setParams] = useState(null);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
-
   function getTemplates() {
     SupersetClient.get({
       url: 'http://192.168.8.60:5000/api/templates',
     })
       .then(({ json }) => {
         setLoadingTemplates(false);
-        // 这里缺少判断是否合法
         const templatesInfo = json;
         setTemplatesInfo(templatesInfo);
         const templateOptions = templatesInfo.map((item, index) => ({
@@ -80,10 +78,9 @@ export default function TemplateSelector(props) {
         }));
         setTemplateOptions(templateOptions);
       })
-      .catch(e => {
+      .catch(() => {
         setLoadingTemplates(false);
-        console.log('error', e);
-        // 这里缺少错误提示信息
+        props.handleError(t('There was an error loading the templates'));
       });
   }
 
@@ -167,7 +164,6 @@ export default function TemplateSelector(props) {
           <Input
             placeholder={templateParam.description}
             key={currentTemplate.label + templateParam.name}
-            onChange={e => changeParam(e.target.id, e.target.value)}
             id={templateParam.name}
           />,
           templateParam.name,

@@ -30,7 +30,7 @@ import Button from 'src/components/Button';
 import { t, styled, css, SupersetTheme } from '@superset-ui/core';
 import Collapse from 'src/components/Collapse';
 import Icons from 'src/components/Icons';
-import { TableSelectorMultiple } from 'src/components/TableSelector';
+import { TableSelectorMultiple } from 'src/SqlLab/components/TableSelector';
 import { IconTooltip } from 'src/components/IconTooltip';
 import { QueryEditor, SchemaOption } from 'src/SqlLab/types';
 import useQueryEditor from 'src/SqlLab/hooks/useQueryEditor';
