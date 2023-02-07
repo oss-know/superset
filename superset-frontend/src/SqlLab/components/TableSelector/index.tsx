@@ -20,24 +20,24 @@ import React, {
   FunctionComponent,
   useState,
   ReactNode,
-  useMemo,
   useEffect,
 } from 'react';
-import { SelectValue } from 'antd/lib/select';
-
-import { styled, t } from '@superset-ui/core';
-import { Select } from 'src/components';
+import { Modal } from 'antd';
+import { styled, t, SupersetClient } from '@superset-ui/core';
 import { FormLabel } from 'src/components/Form';
 import Icons from 'src/components/Icons';
 import DatabaseSelector, {
   DatabaseObject,
 } from 'src/components/DatabaseSelector';
-import RefreshLabel from 'src/components/RefreshLabel';
+import TemplateSelector from 'src/components/TemplateSelector';
+import Button from 'src/components/Button';
+import { Input } from 'src/components/Input';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { SchemaOption } from 'src/SqlLab/types';
 import { useTables, Table } from 'src/hooks/apiResources';
+import Validator from 'src/SqlLab/actions/Validator';
 
 const REFRESH_WIDTH = 30;
 
@@ -50,10 +50,16 @@ const TableSelectorWrapper = styled.div`
       margin-left: ${theme.gridUnit}px;
       margin-top: ${theme.gridUnit * 5}px;
     }
+
     .section {
       display: flex;
       flex-direction: row;
       align-items: center;
+    }
+
+    .input {
+      width: calc(100% - 30px - ${theme.gridUnit}px);
+      flex: 1;
     }
     .divider {
       border-bottom: 1px solid ${theme.colors.secondary.light5};
@@ -66,6 +72,9 @@ const TableSelectorWrapper = styled.div`
       flex: 1;
       max-width: calc(100% - ${theme.gridUnit + REFRESH_WIDTH}px)
     }
+    & > div {
+      margin-bottom: ${theme.gridUnit * 4}px;
+    }
   `}
 `;
 
@@ -73,6 +82,7 @@ const TableLabel = styled.span`
   align-items: center;
   display: flex;
   white-space: nowrap;
+
   svg,
   small {
     margin-right: ${({ theme }) => theme.gridUnit}px;
@@ -133,15 +143,6 @@ export const TableOption = ({ table }: { table: Table }) => {
   );
 };
 
-function renderSelectRow(select: ReactNode, refreshBtn: ReactNode) {
-  return (
-    <div className="section">
-      <span className="select">{select}</span>
-      <span className="refresh">{refreshBtn}</span>
-    </div>
-  );
-}
-
 const TableSelector: FunctionComponent<TableSelectorProps> = ({
   database,
   emptyState,
@@ -152,87 +153,21 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   onDbChange,
   onSchemaChange,
   onSchemasLoad,
-  onTablesLoad,
   readOnly = false,
   onEmptyResults,
   schema,
   sqlLabMode = true,
-  tableSelectMode = 'single',
-  tableValue = undefined,
-  onTableSelectChange,
 }) => {
   const { addSuccessToast } = useToasts();
   const [currentSchema, setCurrentSchema] = useState<string | undefined>(
     schema,
   );
-  const [tableSelectValue, setTableSelectValue] = useState<
-    SelectValue | undefined
-  >(undefined);
-  const {
-    data,
-    isFetching: loadingTables,
-    isFetched,
-    refetch,
-  } = useTables({
-    dbId: database?.id,
-    schema: currentSchema,
-    onSuccess: (data: { options: Table[] }) => {
-      onTablesLoad?.(data.options);
-      if (isFetched) {
-        addSuccessToast(t('List updated'));
-      }
-    },
-    onError: () => handleError(t('There was an error loading the tables')),
-  });
-
-  const tableOptions = useMemo<TableOption[]>(
-    () =>
-      data
-        ? data.options.map(table => ({
-          value: table.value,
-          label: <TableOption table={table} />,
-          text: table.value,
-        }))
-        : [],
-    [data],
-  );
 
   useEffect(() => {
-    // reset selections
     if (database === undefined) {
       setCurrentSchema(undefined);
-      setTableSelectValue(undefined);
     }
-  }, [database, tableSelectMode]);
-
-  useEffect(() => {
-    if (tableSelectMode === 'single') {
-      setTableSelectValue(
-        tableOptions.find(option => option.value === tableValue),
-      );
-    } else {
-      setTableSelectValue(
-        tableOptions?.filter(
-          option => option && tableValue?.includes(option.value),
-        ) || [],
-      );
-    }
-  }, [tableOptions, tableValue, tableSelectMode]);
-
-  const internalTableChange = (
-    selectedOptions: TableOption | TableOption[] | undefined,
-  ) => {
-    if (currentSchema) {
-      onTableSelectChange?.(
-        Array.isArray(selectedOptions)
-          ? selectedOptions.map(option => option?.value)
-          : selectedOptions?.value,
-        currentSchema,
-      );
-    } else {
-      setTableSelectValue(selectedOptions);
-    }
-  };
+  }, [database]);
 
   const internalDbChange = (db: DatabaseObject) => {
     if (onDbChange) {
@@ -245,9 +180,6 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
     if (onSchemaChange) {
       onSchemaChange(schema);
     }
-
-    const value = tableSelectMode === 'single' ? undefined : [];
-    internalTableChange(value);
   };
 
   function renderDatabaseSelector() {
@@ -270,65 +202,139 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
     );
   }
 
-  const handleFilterOption = useMemo(
-    () => (search: string, option: TableOption) => {
-      const searchValue = search.trim().toLowerCase();
-      const { text } = option;
-      return text.toLowerCase().includes(searchValue);
-    },
-    [],
-  );
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const [params, setParams] = useState({});
+  const [template_id, setTemplateId] = useState('');
+  const [dataset_name, setDatasetName] = useState('');
+  const [datasetId, setDatasetId] = useState(null);
 
-  function renderTableSelect() {
-    const disabled = (currentSchema && !formMode && readOnly) || !currentSchema;
-
-    const header = sqlLabMode ? (
-      <FormLabel>{t('See table schema')}</FormLabel>
-    ) : (
-      <FormLabel>{t('Table')}</FormLabel>
+  function postTemplateParamsData(payload: object) {
+    const modal = Modal.info({
+      content: 'Generating dataset ... ...',
+      okButtonProps: {
+        disabled: true,
+        loading: true,
+      },
+      okText: 'chart',
+    });
+    return SupersetClient.post({
+      url: 'http://192.168.8.69:5000/api/dataset',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(({ json }) => {
+        setButtonLoading(false);
+        const { dataset_id: datasetId } = json;
+        setDatasetId(datasetId);
+        modal.update({
+          content: 'Dataset created successfully',
+          okButtonProps: {
+            disabled: false,
+            loading: false,
+          },
+          okText: 'chart',
+          onOk: () => {
+            handleOk();
+          },
+        });
+      })
+      .catch(e => {
+        setButtonLoading(false);
+        modal.update({
+          content: 'Failed to create dataset.',
+          okButtonProps: {
+            disabled: false,
+            loading: false,
+          },
+          okText: 'cancel',
+        });
+      });
+  }
+  function handleOk() {
+    window.open(
+      `/explore/?datasource_id=${datasetId}&dataset_type=table&dataset_id=${datasetId}&datasource_type=table`,
+      '_blank',
+      'noreferrer',
     );
+  }
 
-    const select = (
-      <Select
-        ariaLabel={t('Select table or type table name')}
-        disabled={disabled}
-        filterOption={handleFilterOption}
-        header={header}
-        labelInValue
-        loading={loadingTables}
-        name="select-table"
-        onChange={(options: TableOption | TableOption[]) =>
-          internalTableChange(options)
-        }
-        options={tableOptions}
-        placeholder={t('Select table or type table name')}
-        showSearch
-        mode={tableSelectMode}
-        value={tableSelectValue}
-        allowClear={tableSelectMode === 'multiple'}
-      />
+  function createDataset() {
+    setButtonLoading(true);
+    const validator = new Validator();
+    validator.add(dataset_name, 'isNonEmpty', 'dataset name 不能为空');
+    validator.add(currentSchema, 'isNonEmpty', '请选择Schema');
+    validator.add(database?.id, 'isNonEmpty', '请选择数据库');
+    const errMsg = validator.start();
+    if (errMsg) {
+      Modal.confirm({
+        content: errMsg,
+      });
+      return;
+    }
+    postTemplateParamsData({
+      database: database?.id,
+      schema: currentSchema,
+      params,
+      template_id,
+      dataset_name,
+    });
+  }
+  function onParamsChange(params: Object) {
+    setParams(params);
+  }
+  function onTemplateChange(id: string) {
+    setTemplateId(id);
+  }
+
+  function renderInputRow(input: ReactNode, label: string) {
+    return (
+      <>
+        <FormLabel>{label}</FormLabel>
+        <div className="section">
+          <span className="input">{input}</span>
+          <span className="refresh" />
+        </div>
+      </>
     );
-
-    const refreshLabel = !formMode && !readOnly && (
-      <RefreshLabel
-        onClick={() => refetch()}
-        tooltipContent={t('Force refresh table list')}
-      />
-    );
-
-    return renderSelectRow(select, refreshLabel);
+  }
+  function DatasetNameChange(value: string) {
+    if (value) {
+      setDatasetName(value);
+    }
   }
 
   return (
     <TableSelectorWrapper>
       {renderDatabaseSelector()}
       {sqlLabMode && !formMode && <div className="divider" />}
-      {renderTableSelect()}
+      <TemplateSelector
+        onParamsChange={onParamsChange}
+        onTemplateChange={onTemplateChange}
+        handleError={handleError}
+      />
+      {renderInputRow(
+        <Input
+          placeholder={t('Dataset name')}
+          onChange={e => {
+            DatasetNameChange(e.target.value);
+          }}
+        />,
+        'dataset name',
+      )}
+      <Button
+        block
+        disabled={buttonLoading}
+        loading={buttonLoading}
+        onClick={createDataset}
+      >
+        RUN
+      </Button>
     </TableSelectorWrapper>
   );
 };
 
-export const TableSelectorMultiple: FunctionComponent<TableSelectorProps> =
-  props => <TableSelector tableSelectMode="multiple" {...props} />;
+export const TableSelectorMultiple: FunctionComponent<
+  TableSelectorProps
+> = props => <TableSelector tableSelectMode="multiple" {...props} />;
 
 export default TableSelector;

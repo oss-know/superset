@@ -101,11 +101,9 @@ const StyledToolbar = styled.div`
   justify-content: space-between;
   border: 1px solid ${({ theme }) => theme.colors.grayscale.light2};
   border-top: 0;
-
   form {
     margin-block-end: 0;
   }
-
   .leftItems,
   .rightItems {
     display: flex;
@@ -113,13 +111,11 @@ const StyledToolbar = styled.div`
     & > span {
       margin-right: ${({ theme }) => theme.gridUnit * 2}px;
       display: inline-block;
-
       &:last-child {
         margin-right: 0;
       }
     }
   }
-
   .limitDropdown {
     white-space: nowrap;
   }
